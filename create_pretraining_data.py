@@ -142,7 +142,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
     features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
     features["next_sentence_labels"] = create_int_feature([next_sentence_label])
-    features["synthetic_text_label"] = create_int_feature([synthetic_label])
+    features["synthetic_text_labels"] = create_int_feature([synthetic_label])
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 
@@ -242,6 +242,8 @@ def create_training_instances(input_files_synthetic, input_files_organic, tokeni
   temp_list = list(zip(all_documents, labels))
   rng.shuffle(temp_list)
   all_documents, labels = zip(*temp_list)
+  all_documents = list(all_documents)
+  labels = list(labels)
   vocab_words = list(tokenizer.vocab.keys())
 
   instances = []
@@ -507,7 +509,8 @@ def main(_):
 
 
 if __name__ == "__main__":
-  flags.mark_flag_as_required("input_file")
+  flags.mark_flag_as_required("input_file_synthetic")
+  flags.mark_flag_as_required("input_file_organic")
   flags.mark_flag_as_required("output_file")
   flags.mark_flag_as_required("vocab_file")
   tf.app.run()
