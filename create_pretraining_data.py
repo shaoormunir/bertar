@@ -27,7 +27,10 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("input_file", None,
+flags.DEFINE_string("input_file_synthetic", None,
+                    "Input raw text file (or comma-separated list of files).")
+
+flags.DEFINE_string("input_file_organic", None,
                     "Input raw text file (or comma-separated list of files).")
 
 flags.DEFINE_string(
@@ -69,12 +72,13 @@ class TrainingInstance(object):
   """A single training instance (sentence pair)."""
 
   def __init__(self, tokens, segment_ids, masked_lm_positions, masked_lm_labels,
-               is_random_next):
+               is_random_next, is_synthetic):
     self.tokens = tokens
     self.segment_ids = segment_ids
     self.is_random_next = is_random_next
     self.masked_lm_positions = masked_lm_positions
     self.masked_lm_labels = masked_lm_labels
+    self.is_synthetic = is_synthetic
 
   def __str__(self):
     s = ""
@@ -128,6 +132,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
       masked_lm_weights.append(0.0)
 
     next_sentence_label = 1 if instance.is_random_next else 0
+    synthetic_label = 1 if instance.is_synthetic else 0
 
     features = collections.OrderedDict()
     features["input_ids"] = create_int_feature(input_ids)
@@ -137,6 +142,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
     features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
     features["next_sentence_labels"] = create_int_feature([next_sentence_label])
+    features["synthetic_text_label"] = create_int_feature([synthetic_label])
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 
@@ -176,11 +182,12 @@ def create_float_feature(values):
   return feature
 
 
-def create_training_instances(input_files, tokenizer, max_seq_length,
+def create_training_instances(input_files_synthetic, input_files_organic, tokenizer, max_seq_length,
                               dupe_factor, short_seq_prob, masked_lm_prob,
                               max_predictions_per_seq, rng):
   """Create `TrainingInstance`s from raw text."""
   all_documents = [[]]
+  labels = [False]
 
   # Input file format:
   # (1) One sentence per line. These should ideally be actual sentences, not
@@ -188,7 +195,10 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
   # sentence boundaries for the "next sentence prediction" task).
   # (2) Blank lines between documents. Document boundaries are needed so
   # that the "next sentence prediction" task doesn't span between documents.
-  for input_file in input_files:
+
+  #BERTAR modifications: maintaining labels for now too with the documents, to be used later on with training
+
+  for input_file in input_files_organic:
     with tf.gfile.GFile(input_file, "r") as reader:
       while True:
         line = tokenization.convert_to_unicode(reader.readline())
@@ -199,21 +209,47 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
         # Empty lines are used as document delimiters
         if not line:
           all_documents.append([])
+          labels.append(False)
         tokens = tokenizer.tokenize(line)
         if tokens:
           all_documents[-1].append(tokens)
 
-  # Remove empty documents
-  all_documents = [x for x in all_documents if x]
-  rng.shuffle(all_documents)
+  all_documents.append([])
+  labels.append(True)
 
+  for input_file in input_files_synthetic:
+    with tf.gfile.GFile(input_file, "r") as reader:
+      while True:
+        line = tokenization.convert_to_unicode(reader.readline())
+        if not line:
+          break
+        line = line.strip()
+
+        # Empty lines are used as document delimiters
+        if not line:
+          all_documents.append([])
+          labels.append(True)
+        tokens = tokenizer.tokenize(line)
+        if tokens:
+          all_documents[-1].append(tokens)
+  
+  for i, doc in enumerate(all_documents):
+    if not doc:
+      all_documents.pop(i)
+      labels.pop(i)
+  # # Remove empty documents
+  # all_documents = [x for x in all_documents if x]
+  temp_list = list(zip(all_documents, labels))
+  rng.shuffle(temp_list)
+  all_documents, labels = zip(*temp_list)
   vocab_words = list(tokenizer.vocab.keys())
+
   instances = []
   for _ in range(dupe_factor):
     for document_index in range(len(all_documents)):
       instances.extend(
           create_instances_from_document(
-              all_documents, document_index, max_seq_length, short_seq_prob,
+              all_documents, labels, document_index, max_seq_length, short_seq_prob,
               masked_lm_prob, max_predictions_per_seq, vocab_words, rng))
 
   rng.shuffle(instances)
@@ -221,10 +257,11 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
 
 
 def create_instances_from_document(
-    all_documents, document_index, max_seq_length, short_seq_prob,
+    all_documents, labels, document_index, max_seq_length, short_seq_prob,
     masked_lm_prob, max_predictions_per_seq, vocab_words, rng):
   """Creates `TrainingInstance`s for a single document."""
   document = all_documents[document_index]
+  label = labels[document_index]
 
   # Account for [CLS], [SEP], [SEP]
   max_num_tokens = max_seq_length - 3
@@ -326,7 +363,8 @@ def create_instances_from_document(
             segment_ids=segment_ids,
             is_random_next=is_random_next,
             masked_lm_positions=masked_lm_positions,
-            masked_lm_labels=masked_lm_labels)
+            masked_lm_labels=masked_lm_labels,
+            is_synthetic=label)
         instances.append(instance)
       current_chunk = []
       current_length = 0
@@ -439,17 +477,23 @@ def main(_):
   tokenizer = tokenization.FullTokenizer(
       vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
 
-  input_files = []
-  for input_pattern in FLAGS.input_file.split(","):
-    input_files.extend(tf.gfile.Glob(input_pattern))
+  input_files_organic = []
+  input_files_synthetic = []
+  for input_pattern in FLAGS.input_file_organic.split(","):
+    input_files_organic.extend(tf.gfile.Glob(input_pattern))
+  
+  for input_pattern in FLAGS.input_file_synthetic.split(","):
+    input_files_synthetic.extend(tf.gfile.Glob(input_pattern))
 
   tf.logging.info("*** Reading from input files ***")
-  for input_file in input_files:
+  for input_file in input_files_organic:
+    tf.logging.info("  %s", input_file)
+  for input_file in input_files_synthetic:
     tf.logging.info("  %s", input_file)
 
   rng = random.Random(FLAGS.random_seed)
   instances = create_training_instances(
-      input_files, tokenizer, FLAGS.max_seq_length, FLAGS.dupe_factor,
+      input_files_synthetic,input_files_organic, tokenizer, FLAGS.max_seq_length, FLAGS.dupe_factor,
       FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
       rng)
 
