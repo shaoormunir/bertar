@@ -125,6 +125,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     masked_lm_ids = features["masked_lm_ids"]
     masked_lm_weights = features["masked_lm_weights"]
     next_sentence_labels = features["next_sentence_labels"]
+    synthetic_labels = features["synthetic_text_labels"]
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -147,9 +148,14 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
      next_sentence_log_probs) = get_next_sentence_output(
          bert_config, model.get_pooled_output(), next_sentence_labels)
 
+    
+    (synthetic_loss, synthetic_example_loss,
+     synthetic_log_probs) = get_synthetic_text_output(
+         bert_config, model.get_pooled_output(), synthetic_labels)
+
     # The third loss will be added here
 
-    total_loss = masked_lm_loss + next_sentence_loss
+    total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
     tvars = tf.trainable_variables()
 
@@ -190,7 +196,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
       def metric_fn(masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
                     masked_lm_weights, next_sentence_example_loss,
-                    next_sentence_log_probs, next_sentence_labels):
+                    next_sentence_log_probs, next_sentence_labels, synthetic_example_loss, synthetic_log_probs, synthetic_labels):
         """Computes the loss and accuracy of the model."""
         masked_lm_log_probs = tf.reshape(masked_lm_log_probs,
                                          [-1, masked_lm_log_probs.shape[-1]])
@@ -215,18 +221,30 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
             labels=next_sentence_labels, predictions=next_sentence_predictions)
         next_sentence_mean_loss = tf.metrics.mean(
             values=next_sentence_example_loss)
+        
+        synthetic_log_probs = tf.reshape(
+            synthetic_log_probs, [-1, synthetic_log_probs.shape[-1]])
+        synthetic_predictions = tf.argmax(
+            synthetic_log_probs, axis=-1, output_type=tf.int32)
+        synthetic_labels = tf.reshape(synthetic_labels, [-1])
+        synthetic_accuracy = tf.metrics.accuracy(
+            labels=synthetic_labels, predictions=synthetic_predictions)
+        synthetic_mean_loss = tf.metrics.mean(
+            values=synthetic_example_loss)
 
         return {
             "masked_lm_accuracy": masked_lm_accuracy,
             "masked_lm_loss": masked_lm_mean_loss,
             "next_sentence_accuracy": next_sentence_accuracy,
             "next_sentence_loss": next_sentence_mean_loss,
+            "synthetic_accuracy": synthetic_accuracy,
+            "synthetic_mean_loss": synthetic_mean_loss
         }
 
       eval_metrics = (metric_fn, [
           masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
           masked_lm_weights, next_sentence_example_loss,
-          next_sentence_log_probs, next_sentence_labels
+          next_sentence_log_probs, next_sentence_labels, synthetic_example_loss, synthetic_log_probs, synthetic_labels
       ])
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
