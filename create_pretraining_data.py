@@ -27,14 +27,14 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("input_file_synthetic", None,
+flags.DEFINE_string("input_file_synthetic", "/content/drive/My Drive/iowa-project-2/bot_train_text.txt",
                     "Input raw text file (or comma-separated list of files).")
 
-flags.DEFINE_string("input_file_organic", None,
+flags.DEFINE_string("input_file_organic", "/content/drive/My Drive/iowa-project-2/human_train_text.txt",
                     "Input raw text file (or comma-separated list of files).")
 
 flags.DEFINE_string(
-    "output_file", None,
+    "output_file", "/content/drive/My Drive/iowa-project-2/train_data.tf",
     "Output TF example file (or comma-separated list of files).")
 
 flags.DEFINE_string("vocab_file", "vocab.txt",
@@ -303,11 +303,17 @@ def create_instances_from_document(
         tokens_a = []
         for j in range(a_end):
           tokens_a.extend(current_chunk[j])
+        
+        test_tokens = []
+        for j in range(a_end, len(current_chunk)):
+            test_tokens.extend(current_chunk[j])
+        
+        no_next_sentence = len(test_tokens) == 0
 
         tokens_b = []
         # Random next
         is_random_next = False
-        if len(current_chunk) == 1 or rng.random() < 0.5:
+        if len(current_chunk) == 1 or rng.random() < 0.5 or no_next_sentence:
           is_random_next = True
           target_b_length = target_seq_length - len(tokens_a)
 
@@ -317,7 +323,7 @@ def create_instances_from_document(
           # we're processing.
           for _ in range(10):
             random_document_index = rng.randint(0, len(all_documents) - 1)
-            if random_document_index != document_index:
+            if random_document_index != document_index and len(all_documents[random_document_index]) > 1:
               break
 
           random_document = all_documents[random_document_index]
