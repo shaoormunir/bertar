@@ -182,7 +182,7 @@ class DataProcessor(object):
   @classmethod
   def _read_csv(cls, input_file):
     with tf.gfile.Open(input_file, "r") as f:
-      reader = csv.reader(f)
+      reader = csv.reader(f, quoting=csv.QUOTE_ALL)
       lines = []
       for line in reader:
         lines.append(line)
