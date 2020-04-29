@@ -27,14 +27,14 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("input_file_synthetic", "/content/drive/My Drive/iowa-project-2/bot_train_text.txt",
+flags.DEFINE_string("input_file_synthetic", "/content/drive/My Drive/bert-vocab-and-data/machine.train.0.txt",
                     "Input raw text file (or comma-separated list of files).")
 
-flags.DEFINE_string("input_file_organic", "/content/drive/My Drive/iowa-project-2/human_train_text.txt",
+flags.DEFINE_string("input_file_organic", "/content/drive/My Drive/bert-vocab-and-data/human.train.0.txt,/content/drive/My Drive/bert-vocab-and-data/human.train.1.txt,/content/drive/My Drive/bert-vocab-and-data/human.train.2.txt,/content/drive/My Drive/bert-vocab-and-data/human.train.3.txt",
                     "Input raw text file (or comma-separated list of files).")
 
 flags.DEFINE_string(
-    "output_file", "/content/drive/My Drive/iowa-project-2/train_data.tf",
+    "output_file", "/content/drive/My Drive/iowa-project-2/train_data_new.tf_record",
     "Output TF example file (or comma-separated list of files).")
 
 flags.DEFINE_string("vocab_file", "vocab.txt",
@@ -49,7 +49,7 @@ flags.DEFINE_bool(
     "do_whole_word_mask", False,
     "Whether to use whole word masking rather than per-WordPiece masking.")
 
-flags.DEFINE_integer("max_seq_length", 128, "Maximum sequence length.")
+flags.DEFINE_integer("max_seq_length", 64, "Maximum sequence length.")
 
 flags.DEFINE_integer("max_predictions_per_seq", 20,
                      "Maximum number of masked LM predictions per sequence.")
@@ -63,7 +63,7 @@ flags.DEFINE_integer(
 flags.DEFINE_float("masked_lm_prob", 0.15, "Masked LM probability.")
 
 flags.DEFINE_float(
-    "short_seq_prob", 0.1,
+    "short_seq_prob", 0.2,
     "Probability of creating sequences which are shorter than the "
     "maximum length.")
 
@@ -86,6 +86,7 @@ class TrainingInstance(object):
         [tokenization.printable_text(x) for x in self.tokens]))
     s += "segment_ids: %s\n" % (" ".join([str(x) for x in self.segment_ids]))
     s += "is_random_next: %s\n" % self.is_random_next
+    s += "is_synthetic: %s\n" % self.is_synthetic
     s += "masked_lm_positions: %s\n" % (" ".join(
         [str(x) for x in self.masked_lm_positions]))
     s += "masked_lm_labels: %s\n" % (" ".join(
@@ -171,7 +172,6 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
 
   tf.logging.info("Wrote %d total instances", total_written)
 
-
 def create_int_feature(values):
   feature = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
   return feature
@@ -182,12 +182,12 @@ def create_float_feature(values):
   return feature
 
 
-def create_training_instances(input_files_synthetic, input_files_organic, tokenizer, max_seq_length,
+def create_training_instances(input_files, tokenizer, max_seq_length, is_synthetic,
                               dupe_factor, short_seq_prob, masked_lm_prob,
                               max_predictions_per_seq, rng):
   """Create `TrainingInstance`s from raw text."""
   all_documents = [[]]
-  labels = [False]
+  labels = [is_synthetic]
 
   # Input file format:
   # (1) One sentence per line. These should ideally be actual sentences, not
@@ -198,7 +198,7 @@ def create_training_instances(input_files_synthetic, input_files_organic, tokeni
 
   #BERTAR modifications: maintaining labels for now too with the documents, to be used later on with training
 
-  for input_file in input_files_organic:
+  for input_file in input_files:
     with tf.gfile.GFile(input_file, "r") as reader:
       while True:
         line = tokenization.convert_to_unicode(reader.readline())
@@ -209,26 +209,7 @@ def create_training_instances(input_files_synthetic, input_files_organic, tokeni
         # Empty lines are used as document delimiters
         if not line:
           all_documents.append([])
-          labels.append(False)
-        tokens = tokenizer.tokenize(line)
-        if tokens:
-          all_documents[-1].append(tokens)
-
-  all_documents.append([])
-  labels.append(True)
-
-  for input_file in input_files_synthetic:
-    with tf.gfile.GFile(input_file, "r") as reader:
-      while True:
-        line = tokenization.convert_to_unicode(reader.readline())
-        if not line:
-          break
-        line = line.strip()
-
-        # Empty lines are used as document delimiters
-        if not line:
-          all_documents.append([])
-          labels.append(True)
+          labels.append(is_synthetic)
         tokens = tokenizer.tokenize(line)
         if tokens:
           all_documents[-1].append(tokens)
@@ -321,7 +302,7 @@ def create_instances_from_document(
           # corpora. However, just to be careful, we try to make sure that
           # the random document is not the same as the document
           # we're processing.
-          for _ in range(10):
+          for _ in range(100):
             random_document_index = rng.randint(0, len(all_documents) - 1)
             if random_document_index != document_index and len(all_documents[random_document_index]) > 1:
               break
@@ -493,26 +474,42 @@ def main(_):
   for input_pattern in FLAGS.input_file_synthetic.split(","):
     input_files_synthetic.extend(tf.gfile.Glob(input_pattern))
 
+  shard_count = 0
   tf.logging.info("*** Reading from input files ***")
   for input_file in input_files_organic:
     tf.logging.info("  %s", input_file)
+    rng = random.Random(FLAGS.random_seed)
+    instances = create_training_instances(
+        input_file, tokenizer, FLAGS.max_seq_length, False, FLAGS.dupe_factor,
+        FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
+        rng)
+    output_files = FLAGS.output_file.split(",")
+    n_output_files = []
+    tf.logging.info("*** Writing to output files ***")
+    for output_file in output_files:
+      n_output_files.append(f"{output_file}-shard-{shard_count}")
+      tf.logging.info("  %s", output_file)
+
+    write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
+                                    FLAGS.max_predictions_per_seq, n_output_files)
+    shard_count+=1
   for input_file in input_files_synthetic:
     tf.logging.info("  %s", input_file)
+    rng = random.Random(FLAGS.random_seed)
+    instances = create_training_instances(
+        input_file, tokenizer, FLAGS.max_seq_length, True, FLAGS.dupe_factor,
+        FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
+        rng)
+    output_files = FLAGS.output_file.split(",")
+    n_output_files = []
+    tf.logging.info("*** Writing to output files ***")
+    for output_file in output_files:
+      n_output_files.append(f"{output_file}-shard-{shard_count}")
+      tf.logging.info("  %s", output_file)
 
-  rng = random.Random(FLAGS.random_seed)
-  instances = create_training_instances(
-      input_files_synthetic,input_files_organic, tokenizer, FLAGS.max_seq_length, FLAGS.dupe_factor,
-      FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
-      rng)
-
-  output_files = FLAGS.output_file.split(",")
-  tf.logging.info("*** Writing to output files ***")
-  for output_file in output_files:
-    tf.logging.info("  %s", output_file)
-
-  write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
-                                  FLAGS.max_predictions_per_seq, output_files)
-
+    write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
+                                    FLAGS.max_predictions_per_seq, n_output_files)
+    shard_count+=1
 
 if __name__ == "__main__":
   flags.mark_flag_as_required("input_file_synthetic")
