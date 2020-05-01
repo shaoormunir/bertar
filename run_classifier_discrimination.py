@@ -10,7 +10,12 @@ import os
 import modeling
 import optimization
 import tokenization
+import random
+import nltk
 import tensorflow as tf
+
+
+nltk.download('punkt')
 
 flags = tf.flags
 
@@ -33,13 +38,13 @@ flags.DEFINE_string("vocab_file", "vocab.txt",
                     "The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bertar-checkpoints/base-model-run-finetune",
+    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-1-finetune",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
 
 flags.DEFINE_string(
-    "init_checkpoint", "gs://bertar-checkpoints/base-model-run-lre",
+    "init_checkpoint", "gs://bert-checkpoints/bertar/base-model-run-1",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
 flags.DEFINE_bool(
@@ -77,13 +82,13 @@ flags.DEFINE_float(
     "Proportion of training to perform linear learning rate warmup for. "
     "E.g., 0.1 = 10% of training.")
 
-flags.DEFINE_integer("save_checkpoints_steps", 1000,
+flags.DEFINE_integer("save_checkpoints_steps", 100000,
                      "How often to save the model checkpoint.")
 
 flags.DEFINE_integer("iterations_per_loop", 1000,
                      "How many steps to make in each estimator call.")
 
-flags.DEFINE_bool("use_tpu", False, "Whether to use TPU or GPU/CPU.")
+flags.DEFINE_bool("use_tpu", True, "Whether to use TPU or GPU/CPU.")
 
 tf.flags.DEFINE_string(
     "tpu_name", 'grpc://' + os.environ['COLAB_TPU_ADDR'],
@@ -193,78 +198,90 @@ class BERTARProcessor(DataProcessor):
 
   def get_train_examples(self, data_dir):
     """See base class."""
-    machine = self._read_csv(
-        os.path.join(data_dir, "machine.train.csv"))
-    human = self._read_csv(
-        os.path.join(data_dir, "human.train.csv"))
     examples = []
-    for (i, line) in enumerate(machine):
-      if i == 0:
-        continue
-      guid = "train-machine-%d" % (i)
-      text_b = None
-      text_a = tokenization.convert_to_unicode(line)
-      if len(text_a.split(" ")) > 128:
-          temp = text_a
-          temp = temp.split(" ")
-          text_a = " ".join(temp[:128])
-          text_b = " ".join(temp[128:])
-      label = tokenization.convert_to_unicode("machine")
-      examples.append(
-          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    with tf.gfile.GFile(data_dir+"machine.train.txt", "r") as reader:
+      i = 0
+      while True:
+        line = tokenization.convert_to_unicode(reader.readline())
+        if not line:
+          break
+        line = line.strip()
+        guid = "train-machine-%d" % (i)
+        text_b = None
+        text_a = tokenization.convert_to_unicode(line)
+        if len(text_a.split(" ")) > FLAGS.seq_length:
+            temp = nltk.tokenize.sent_tokenize(text_a)
+            if(len(temp)>=2):
+              text_a = " ".join(temp[:len(temp)/2])
+              text_b = " ".join(temp[len(temp/2):])
+        label = tokenization.convert_to_unicode("machine")
+        examples.append(
+            InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+
+    with tf.gfile.GFile(data_dir+"human.train.txt", "r") as reader:
+      i = 0
+      while True:
+        line = tokenization.convert_to_unicode(reader.readline())
+        if not line:
+          break
+        line = line.strip()
+        guid = "train-human-%d" % (i)
+        text_b = None
+        text_a = tokenization.convert_to_unicode(line)
+        if len(text_a.split(" ")) > FLAGS.seq_length:
+            temp = nltk.tokenize.sent_tokenize(text_a)
+            if(len(temp)>=2):
+              text_a = " ".join(temp[:len(temp)/2])
+              text_b = " ".join(temp[len(temp/2):])
+        label = tokenization.convert_to_unicode("human")
+        examples.append(
+            InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     
-    for (i, line) in enumerate(human):
-      if i == 0:
-        continue
-      guid = "train-human-%d" % (i)
-      text_b = None
-      text_a = tokenization.convert_to_unicode(line)
-      if len(text_a.split(" ")) > 128:
-          temp = text_a
-          temp = temp.split(" ")
-          text_a = " ".join(temp[:128])
-          text_b = " ".join(temp[128:])
-      label = tokenization.convert_to_unicode("human")
-      examples.append(
-          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    random.shuffle(examples)
     return examples
 
   def get_test_examples(self, data_dir):
     """See base class."""
-    machine = self._read_csv(
-        os.path.join(data_dir, "machine.test.csv"))
-    human = self._read_csv(
-        os.path.join(data_dir, "human.test.csv"))
     examples = []
-    for (i, line) in enumerate(machine):
-      if i == 0:
-        continue
-      guid = "test-machine-%d" % (i)
-      text_b = None
-      text_a = tokenization.convert_to_unicode(line)
-      if len(text_a.split(" ")) > 128:
-          temp = text_a
-          temp = temp.split(" ")
-          text_a = " ".join(temp[:128])
-          text_b = " ".join(temp[128:])
-      label = tokenization.convert_to_unicode("machine")
-      examples.append(
-          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    with tf.gfile.GFile(data_dir+"machine.test.txt", "r") as reader:
+      i = 0
+      while True:
+        line = tokenization.convert_to_unicode(reader.readline())
+        if not line:
+          break
+        line = line.strip()
+        guid = "test-machine-%d" % (i)
+        text_b = None
+        text_a = tokenization.convert_to_unicode(line)
+        if len(text_a.split(" ")) > FLAGS.seq_length:
+            temp = nltk.tokenize.sent_tokenize(text_a)
+            if(len(temp)>=2):
+              text_a = " ".join(temp[:len(temp)/2])
+              text_b = " ".join(temp[len(temp/2):])
+        label = tokenization.convert_to_unicode("machine")
+        examples.append(
+            InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+
+    with tf.gfile.GFile(data_dir+"human.test.txt", "r") as reader:
+      i = 0
+      while True:
+        line = tokenization.convert_to_unicode(reader.readline())
+        if not line:
+          break
+        line = line.strip()
+        guid = "test-human-%d" % (i)
+        text_b = None
+        text_a = tokenization.convert_to_unicode(line)
+        if len(text_a.split(" ")) > FLAGS.seq_length:
+            temp = nltk.tokenize.sent_tokenize(text_a)
+            if(len(temp)>=2):
+              text_a = " ".join(temp[:len(temp)/2])
+              text_b = " ".join(temp[len(temp/2):])
+        label = tokenization.convert_to_unicode("human")
+        examples.append(
+            InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     
-    for (i, line) in enumerate(human):
-      if i == 0:
-        continue
-      guid = "test-human-%d" % (i)
-      text_b = None
-      text_a = tokenization.convert_to_unicode(line)
-      if len(text_a.split(" ")) > 128:
-          temp = text_a
-          temp = temp.split(" ")
-          text_a = " ".join(temp[:128])
-          text_b = " ".join(temp[128:])
-      label = tokenization.convert_to_unicode("human")
-      examples.append(
-          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+    random.shuffle(examples)
     return examples
 
   def get_labels(self):
