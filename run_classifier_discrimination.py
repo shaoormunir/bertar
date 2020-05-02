@@ -38,7 +38,7 @@ flags.DEFINE_string("vocab_file", "vocab.txt",
                     "The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-1-finetune",
+    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-2-finetune",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
@@ -280,8 +280,6 @@ class BERTARProcessor(DataProcessor):
         label = tokenization.convert_to_unicode("human")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
-    
-    random.shuffle(examples)
     return examples
 
   def get_labels(self):
