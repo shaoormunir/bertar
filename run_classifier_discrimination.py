@@ -23,7 +23,7 @@ FLAGS = flags.FLAGS
 
 ## Required parameters
 flags.DEFINE_string(
-    "data_dir", "input_data",
+    "data_dir", "input_data/",
     "The input data dir. Should contain the .tsv files (or other data files) "
     "for the task.")
 
@@ -53,7 +53,7 @@ flags.DEFINE_bool(
     "models and False for cased models.")
 
 flags.DEFINE_integer(
-    "max_seq_length", 128,
+    "max_seq_length", 64,
     "The maximum total input sequence length after WordPiece tokenization. "
     "Sequences longer than this will be truncated, and sequences shorter "
     "than this will be padded.")
@@ -209,11 +209,11 @@ class BERTARProcessor(DataProcessor):
         guid = "train-machine-%d" % (i)
         text_b = None
         text_a = tokenization.convert_to_unicode(line)
-        if len(text_a.split(" ")) > FLAGS.seq_length:
+        if len(text_a.split(" ")) > FLAGS.max_seq_length:
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
-              text_a = " ".join(temp[:len(temp)/2])
-              text_b = " ".join(temp[len(temp/2):])
+              text_a = " ".join(temp[:int(len(temp)/2)])
+              text_b = " ".join(temp[int(len(temp/2)):])
         label = tokenization.convert_to_unicode("machine")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
@@ -228,11 +228,11 @@ class BERTARProcessor(DataProcessor):
         guid = "train-human-%d" % (i)
         text_b = None
         text_a = tokenization.convert_to_unicode(line)
-        if len(text_a.split(" ")) > FLAGS.seq_length:
+        if len(text_a.split(" ")) > FLAGS.max_seq_length:
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
-              text_a = " ".join(temp[:len(temp)/2])
-              text_b = " ".join(temp[len(temp/2):])
+              text_a = " ".join(temp[:int(len(temp)/2)])
+              text_b = " ".join(temp[int(len(temp/2)):])
         label = tokenization.convert_to_unicode("human")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
@@ -253,11 +253,11 @@ class BERTARProcessor(DataProcessor):
         guid = "test-machine-%d" % (i)
         text_b = None
         text_a = tokenization.convert_to_unicode(line)
-        if len(text_a.split(" ")) > FLAGS.seq_length:
+        if len(text_a.split(" ")) > FLAGS.max_seq_length:
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
-              text_a = " ".join(temp[:len(temp)/2])
-              text_b = " ".join(temp[len(temp/2):])
+              text_a = " ".join(temp[:int(len(temp)/2)])
+              text_b = " ".join(temp[int(len(temp/2)):])
         label = tokenization.convert_to_unicode("machine")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
@@ -272,11 +272,11 @@ class BERTARProcessor(DataProcessor):
         guid = "test-human-%d" % (i)
         text_b = None
         text_a = tokenization.convert_to_unicode(line)
-        if len(text_a.split(" ")) > FLAGS.seq_length:
+        if len(text_a.split(" ")) > FLAGS.max_seq_length:
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
-              text_a = " ".join(temp[:len(temp)/2])
-              text_b = " ".join(temp[len(temp/2):])
+              text_a = " ".join(temp[:int(len(temp)/2)])
+              text_b = " ".join(temp[int(len(temp/2)):])
         label = tokenization.convert_to_unicode("human")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
