@@ -213,7 +213,7 @@ class BERTARProcessor(DataProcessor):
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
               text_a = " ".join(temp[:int(len(temp)/2)])
-              text_b = " ".join(temp[int(len(temp/2)):])
+              text_b = " ".join(temp[int(len(temp)/2):])
         label = tokenization.convert_to_unicode("machine")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
@@ -232,7 +232,7 @@ class BERTARProcessor(DataProcessor):
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
               text_a = " ".join(temp[:int(len(temp)/2)])
-              text_b = " ".join(temp[int(len(temp/2)):])
+              text_b = " ".join(temp[int(len(temp)/2):])
         label = tokenization.convert_to_unicode("human")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
@@ -257,7 +257,7 @@ class BERTARProcessor(DataProcessor):
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
               text_a = " ".join(temp[:int(len(temp)/2)])
-              text_b = " ".join(temp[int(len(temp/2)):])
+              text_b = " ".join(temp[int(len(temp)/2):])
         label = tokenization.convert_to_unicode("machine")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
@@ -276,7 +276,7 @@ class BERTARProcessor(DataProcessor):
             temp = nltk.tokenize.sent_tokenize(text_a)
             if(len(temp)>=2):
               text_a = " ".join(temp[:int(len(temp)/2)])
-              text_b = " ".join(temp[int(len(temp/2)):])
+              text_b = " ".join(temp[int(len(temp)/2):])
         label = tokenization.convert_to_unicode("human")
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
