@@ -38,7 +38,7 @@ flags.DEFINE_string(
     "Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-1",
+    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-3",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
@@ -105,7 +105,7 @@ tf.flags.DEFINE_string(
 tf.flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
 
 flags.DEFINE_integer(
-    "num_tpu_cores", 64,
+    "num_tpu_cores", 8,
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
 
