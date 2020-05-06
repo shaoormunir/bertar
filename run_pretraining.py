@@ -155,7 +155,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     total_loss = masked_lm_loss + next_sentence_loss
 
     tf.contrib.summary.scalar("total_loss", total_loss)
-    tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
     tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
     tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
 
