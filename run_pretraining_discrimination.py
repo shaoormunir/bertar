@@ -160,13 +160,13 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
-    tf.summary.scalar("total_loss", total_loss)
-    tf.summary.scalar("synthetic_prediction_loss", synthetic_loss)
-    tf.summary.scalar("next_sentence_loss", next_sentence_loss)
-    tf.summary.scalar("masked_lm_loss", masked_lm_loss)
+    tf.contrib.summary.scalar("total_loss", total_loss)
+    tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
+    tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
+    tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
 
-    tf.summary.histogram("encoder_layers", model.get_all_encoder_layers())
-    tf.summary.histogram("pooled_output", model.get_pooled_output())
+    tf.contrib.summary.histogram("encoder_layers", model.get_all_encoder_layers())
+    tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
     tvars = tf.trainable_variables()
 
@@ -202,7 +202,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
           mode=mode,
           loss=total_loss,
           train_op=train_op,
-          summary_op=tf.summary.merge_all(),
           scaffold_fn=scaffold_fn)
     elif mode == tf.estimator.ModeKeys.EVAL:
 
