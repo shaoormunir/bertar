@@ -22,6 +22,7 @@ import os
 import modeling
 import optimization
 import tensorflow as tf
+import pandas as pd
 
 flags = tf.flags
 
@@ -78,7 +79,7 @@ flags.DEFINE_integer("save_checkpoints_steps", 2000,
 flags.DEFINE_integer("save_summary_steps", 1000,
                      "How often to save the model summaries.")
 
-flags.DEFINE_integer("iterations_per_loop", 100,
+flags.DEFINE_integer("iterations_per_loop", 1000,
                      "How many steps to make in each estimator call.")
 
 flags.DEFINE_integer("max_eval_steps", 100, "Maximum number of eval steps.")
@@ -133,6 +134,8 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
+    df = pd.DataFrame(columns = ("total_loss", "synthetic_prediction_loss","next_sentence_loss","masked_lm_loss"))
+
     model = modeling.BertModel(
         config=bert_config,
         is_training=is_training,
@@ -172,6 +175,10 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
     tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
 
+    df.append({"total_loss":total_loss, "synthetic_prediction_loss":synthetic_loss,"next_sentence_loss":next_sentence_loss,"masked_lm_loss":masked_lm_loss})
+
+    pd.to_csv("losses.csv", mode='a', headers=False)
+    
     tf.contrib.summary.histogram(
         "encoder_layers", model.get_all_encoder_layers())
     tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
