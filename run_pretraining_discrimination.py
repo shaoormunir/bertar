@@ -176,7 +176,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         "encoder_layers", model.get_all_encoder_layers())
     tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
-    tf.contrib.summary.merge_all()
 
     # train_summary_hook = tf.train.SummarySaverHook(
     #                             save_steps=1,
@@ -215,10 +214,16 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     if mode == tf.estimator.ModeKeys.TRAIN:
       train_op = optimization.create_optimizer(
           total_loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
+      
+      eval_metric_ops =   {"total_loss": total_loss,"synthetic_prediction_loss": synthetic_loss,"next_sentence_loss": next_sentence_loss,
+      "masked_lm_loss": masked_lm_loss,
+      "encoder_layers": model.get_all_encoder_layers(),
+      "pooled_output": model.get_pooled_output()}
 
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
           loss=total_loss,
+          metric_ops=eval_metric_ops,
           train_op=train_op,
           scaffold_fn=scaffold_fn)
     elif mode == tf.estimator.ModeKeys.EVAL:
