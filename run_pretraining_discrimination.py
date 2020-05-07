@@ -27,7 +27,7 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-## Required parameters
+# Required parameters
 flags.DEFINE_string(
     "bert_config_file", "bert_config.json",
     "The config json file corresponding to the pre-trained BERT model. "
@@ -41,7 +41,7 @@ flags.DEFINE_string(
     "output_dir", "gs://bert-checkpoints/bertar/base-model-run-test",
     "The output directory where the model checkpoints will be written.")
 
-## Other parameters
+# Other parameters
 flags.DEFINE_string(
     "init_checkpoint", None,
     "Initial checkpoint (usually from a pre-trained BERT model).")
@@ -65,13 +65,14 @@ flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
 
 flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
 
-flags.DEFINE_float("learning_rate", 5e-5, "The initial learning rate for Adam.")
+flags.DEFINE_float("learning_rate", 5e-5,
+                   "The initial learning rate for Adam.")
 
-flags.DEFINE_integer("num_train_steps", 1000, "Number of training steps.")
+flags.DEFINE_integer("num_train_steps", 2000, "Number of training steps.")
 
 flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 
-flags.DEFINE_integer("save_checkpoints_steps", 100000,
+flags.DEFINE_integer("save_checkpoints_steps", 2000,
                      "How often to save the model checkpoint.")
 
 flags.DEFINE_integer("save_summary_steps", 1000,
@@ -119,7 +120,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     tf.logging.info("*** Features ***")
     for name in sorted(features.keys()):
-      tf.logging.info("  name = %s, shape = %s" % (name, features[name].shape)) 
+      tf.logging.info("  name = %s, shape = %s" % (name, features[name].shape))
 
     input_ids = features["input_ids"]
     input_mask = features["input_mask"]
@@ -151,7 +152,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
      next_sentence_log_probs) = get_next_sentence_output(
          bert_config, model.get_pooled_output(), next_sentence_labels)
 
-    
     (synthetic_loss, synthetic_example_loss,
      synthetic_log_probs) = get_synthetic_text_output(
          bert_config, model.get_pooled_output(), synthetic_labels)
@@ -165,13 +165,14 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
     tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
 
-    tf.contrib.summary.histogram("encoder_layers", model.get_all_encoder_layers())
+    tf.contrib.summary.histogram(
+        "encoder_layers", model.get_all_encoder_layers())
     tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
-    train_summary_hook = tf.train.SummarySaverHook(
-                                save_steps=1,
-                                output_dir= FLAGS.output_dir + "/test_summaries",
-                                scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
+    # train_summary_hook = tf.train.SummarySaverHook(
+    #                             save_steps=1,
+    #                             output_dir= FLAGS.output_dir + "/test_summaries",
+    #                             scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
 
     tvars = tf.trainable_variables()
 
@@ -181,7 +182,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
       (assignment_map, initialized_variable_names
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
-
         def tpu_scaffold():
           tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
           return tf.train.Scaffold()
@@ -237,7 +237,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
             labels=next_sentence_labels, predictions=next_sentence_predictions)
         next_sentence_mean_loss = tf.metrics.mean(
             values=next_sentence_example_loss)
-        
+
         synthetic_log_probs = tf.reshape(
             synthetic_log_probs, [-1, synthetic_log_probs.shape[-1]])
         synthetic_predictions = tf.argmax(
@@ -266,7 +266,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
           mode=mode,
           loss=total_loss,
           eval_metrics=eval_metrics,
-          training_hooks = [train_summary_hook],
+          training_hooks=[train_summary_hook],
           scaffold_fn=scaffold_fn)
     else:
       raise ValueError("Only TRAIN and EVAL modes are supported: %s" % (mode))
@@ -344,6 +344,7 @@ def get_next_sentence_output(bert_config, input_tensor, labels):
     per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
     loss = tf.reduce_mean(per_example_loss)
     return (loss, per_example_loss, log_probs)
+
 
 def get_synthetic_text_output(bert_config, input_tensor, labels):
   """Get loss and log probs for the next sentence prediction."""
@@ -522,6 +523,14 @@ def main(_):
       eval_batch_size=FLAGS.eval_batch_size)
 
   if FLAGS.do_train:
+    tensors_to_log = {
+      'total_loss': 'total_loss',
+      'synthetic_prediction_loss': 'synthetic_prediction_loss',
+      'next_sentence_loss': 'next_sentence_loss',
+      'masked_lm_loss': 'masked_lm_loss',
+      'pooled_output': 'pooled_output',
+      }
+    logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=100)
     tf.logging.info("***** Running training *****")
     tf.logging.info("  Batch size = %d", FLAGS.train_batch_size)
     train_input_fn = input_fn_builder(
@@ -529,7 +538,7 @@ def main(_):
         max_seq_length=FLAGS.max_seq_length,
         max_predictions_per_seq=FLAGS.max_predictions_per_seq,
         is_training=True)
-    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps)
+    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps, hooks=[logging_hook])
 
   if FLAGS.do_eval:
     tf.logging.info("***** Running evaluation *****")
