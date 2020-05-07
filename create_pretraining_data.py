@@ -27,10 +27,10 @@ flags = tf.flags
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("input_file_synthetic", "/content/drive/My Drive/bert-vocab-and-data/machine.train.0.txt",
+flags.DEFINE_string("input_file_synthetic", "/content/drive/My Drive/bert-vocab-and-data-new/machine.train.0.txt",
                     "Input raw text file (or comma-separated list of files).")
 
-flags.DEFINE_string("input_file_organic", "/content/drive/My Drive/bert-vocab-and-data/human.train.0.txt,/content/drive/My Drive/bert-vocab-and-data/human.train.1.txt,/content/drive/My Drive/bert-vocab-and-data/human.train.2.txt,/content/drive/My Drive/bert-vocab-and-data/human.train.3.txt",
+flags.DEFINE_string("input_file_organic", "/content/drive/My Drive/bert-vocab-and-data-new/human.train.0.txt",
                     "Input raw text file (or comma-separated list of files).")
 
 flags.DEFINE_string(
