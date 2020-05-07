@@ -574,14 +574,14 @@ def main(_):
     tf.logging.info("  %s", input_file)
     rng = random.Random(FLAGS.random_seed)
     instances.append(create_training_instances(
-        input_file, tokenizer, FLAGS.max_seq_length, False, FLAGS.dupe_factor,
+        [input_file], tokenizer, FLAGS.max_seq_length, False, FLAGS.dupe_factor,
         FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
         rng))
   for input_file in input_files_synthetic:
     tf.logging.info("  %s", input_file)
     rng = random.Random(FLAGS.random_seed)
     instances.append(create_training_instances(
-        input_file, tokenizer, FLAGS.max_seq_length, True, FLAGS.dupe_factor,
+        [input_file], tokenizer, FLAGS.max_seq_length, True, FLAGS.dupe_factor,
         FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
         rng))
   
