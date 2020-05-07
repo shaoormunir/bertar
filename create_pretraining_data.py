@@ -71,13 +71,19 @@ flags.DEFINE_float(
 class TrainingInstance(object):
   """A single training instance (sentence pair)."""
 
-  def __init__(self, tokens, segment_ids, masked_lm_positions, masked_lm_labels,
+  def __init__(self, tokens, tokens_a, tokens_b, segment_ids, masked_lm_positions, masked_lm_labels, masked_lm_positions_a, masked_lm_labels_a, masked_lm_positions_b, masked_lm_labels_b,
                is_random_next, is_synthetic):
     self.tokens = tokens
+    self.tokens_a = tokens_a
+    self.tokens_b = tokens_b
     self.segment_ids = segment_ids
     self.is_random_next = is_random_next
     self.masked_lm_positions = masked_lm_positions
     self.masked_lm_labels = masked_lm_labels
+    self.masked_lm_positions_a = masked_lm_positions
+    self.masked_lm_labels_a = masked_lm_labels
+    self.masked_lm_positions_b = masked_lm_positions
+    self.masked_lm_labels_b = masked_lm_labels
     self.is_synthetic = is_synthetic
 
   def __str__(self):
@@ -102,10 +108,8 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
                                     max_predictions_per_seq, output_files):
   """Create TF example files from `TrainingInstance`s."""
   writers = []
-  for output_file in output_files:
-    writers.append(tf.python_io.TFRecordWriter(output_file))
-
-  writer_index = 0
+  writers.append(tf.python_io.TFRecordWriter(FLAGS.output_file+"-task-nsp"))
+  writers.append(tf.python_io.TFRecordWriter(FLAGS.output_file+"-task-nonsp"))
 
   total_written = 0
   for (inst_index, instance) in enumerate(instances):
@@ -147,10 +151,7 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 
-    writers[writer_index].write(tf_example.SerializeToString())
-    writer_index = (writer_index + 1) % len(writers)
-
-    total_written += 1
+    writers[0].write(tf_example.SerializeToString())
 
     if inst_index < 20:
       tf.logging.info("*** Example ***")
@@ -166,6 +167,78 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
           values = feature.float_list.value
         tf.logging.info(
             "%s: %s" % (feature_name, " ".join([str(x) for x in values])))
+
+    # Writing for token a from here
+    input_ids = tokenizer.convert_tokens_to_ids(instance.tokens_a)
+    input_mask = [1] * len(input_ids)
+    assert len(input_ids) <= max_seq_length
+
+    while len(input_ids) < max_seq_length:
+      input_ids.append(0)
+      input_mask.append(0)
+
+    assert len(input_ids) == max_seq_length
+    assert len(input_mask) == max_seq_length
+
+    masked_lm_positions = list(instance.masked_lm_positions_a)
+    masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels_a)
+    masked_lm_weights = [1.0] * len(masked_lm_ids)
+
+    while len(masked_lm_positions) < max_predictions_per_seq:
+      masked_lm_positions.append(0)
+      masked_lm_ids.append(0)
+      masked_lm_weights.append(0.0)
+
+    synthetic_label = 1 if instance.is_synthetic else 0
+
+    features = collections.OrderedDict()
+    features["input_ids"] = create_int_feature(input_ids)
+    features["input_mask"] = create_int_feature(input_mask)
+    features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
+    features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
+    features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
+    features["synthetic_text_labels"] = create_int_feature([synthetic_label])
+
+    tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+
+    writers[1].write(tf_example.SerializeToString())
+    
+    #writing for token b from here
+    input_ids = tokenizer.convert_tokens_to_ids(instance.tokens_b)
+    input_mask = [1] * len(input_ids)
+    assert len(input_ids) <= max_seq_length
+
+    while len(input_ids) < max_seq_length:
+      input_ids.append(0)
+      input_mask.append(0)
+
+    assert len(input_ids) == max_seq_length
+    assert len(input_mask) == max_seq_length
+
+    masked_lm_positions = list(instance.masked_lm_positions_b)
+    masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels_b)
+    masked_lm_weights = [1.0] * len(masked_lm_ids)
+
+    while len(masked_lm_positions) < max_predictions_per_seq:
+      masked_lm_positions.append(0)
+      masked_lm_ids.append(0)
+      masked_lm_weights.append(0.0)
+
+    synthetic_label = 1 if instance.is_synthetic else 0
+
+    features = collections.OrderedDict()
+    features["input_ids"] = create_int_feature(input_ids)
+    features["input_mask"] = create_int_feature(input_mask)
+    features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
+    features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
+    features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
+    features["synthetic_text_labels"] = create_int_feature([synthetic_label])
+
+    tf_example = tf.train.Example(features=tf.train.Features(feature=features))
+
+    writers[1].write(tf_example.SerializeToString())
+
+    total_written += 1
 
   for writer in writers:
     writer.close()
@@ -234,8 +307,6 @@ def create_training_instances(input_files, tokenizer, max_seq_length, is_synthet
           create_instances_from_document(
               all_documents, labels, document_index, max_seq_length, short_seq_prob,
               masked_lm_prob, max_predictions_per_seq, vocab_words, rng))
-
-  rng.shuffle(instances)
   return instances
 
 
@@ -328,31 +399,53 @@ def create_instances_from_document(
         assert len(tokens_b) >= 1
 
         tokens = []
+        tokens_senta = []
+        tokens_sentb = []
         segment_ids = []
         tokens.append("[CLS]")
+        tokens_senta.append("[CLS]")
         segment_ids.append(0)
         for token in tokens_a:
           tokens.append(token)
+          tokens_senta.append(token)
           segment_ids.append(0)
 
         tokens.append("[SEP]")
+        tokens_senta.append("[SEP]")
         segment_ids.append(0)
-
+        tokens_sentb.append("[CLS]")
         for token in tokens_b:
           tokens.append(token)
+          tokens_sentb.append(token)
           segment_ids.append(1)
         tokens.append("[SEP]")
+        tokens_sentb.append("[SEP]")
         segment_ids.append(1)
 
         (tokens, masked_lm_positions,
          masked_lm_labels) = create_masked_lm_predictions(
              tokens, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+        
+        (tokens_senta, masked_lm_positions_a,
+         masked_lm_labels_a) = create_masked_lm_predictions(
+             tokens_senta, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+
+        (tokens_sentb, masked_lm_positions_b,
+         masked_lm_labels_b) = create_masked_lm_predictions(
+             tokens_sentb, masked_lm_prob, max_predictions_per_seq, vocab_words, rng)
+
         instance = TrainingInstance(
             tokens=tokens,
+            tokens_a=tokens_senta,
+            tokens_b=tokens_sentb,
             segment_ids=segment_ids,
             is_random_next=is_random_next,
             masked_lm_positions=masked_lm_positions,
             masked_lm_labels=masked_lm_labels,
+            masked_lm_positions_a=masked_lm_positions_a,
+            masked_lm_labels_a=masked_lm_labels_a,
+            masked_lm_positions_b=masked_lm_positions_b,
+            masked_lm_labels_b=masked_lm_labels_b,
             is_synthetic=label)
         instances.append(instance)
       current_chunk = []
@@ -475,41 +568,46 @@ def main(_):
     input_files_synthetic.extend(tf.gfile.Glob(input_pattern))
 
   shard_count = 0
+  instances = []
   tf.logging.info("*** Reading from input files ***")
   for input_file in input_files_organic:
     tf.logging.info("  %s", input_file)
     rng = random.Random(FLAGS.random_seed)
-    instances = create_training_instances(
+    instances.append(create_training_instances(
         input_file, tokenizer, FLAGS.max_seq_length, False, FLAGS.dupe_factor,
         FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
-        rng)
-    output_files = FLAGS.output_file.split(",")
-    n_output_files = []
-    tf.logging.info("*** Writing to output files ***")
-    for output_file in output_files:
-      n_output_files.append(f"{output_file}-shard-{shard_count}")
-      tf.logging.info("  %s", output_file)
-
-    write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
-                                    FLAGS.max_predictions_per_seq, n_output_files)
-    shard_count+=1
+        rng))
   for input_file in input_files_synthetic:
     tf.logging.info("  %s", input_file)
     rng = random.Random(FLAGS.random_seed)
-    instances = create_training_instances(
+    instances.append(create_training_instances(
         input_file, tokenizer, FLAGS.max_seq_length, True, FLAGS.dupe_factor,
         FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
-        rng)
-    output_files = FLAGS.output_file.split(",")
-    n_output_files = []
-    tf.logging.info("*** Writing to output files ***")
-    for output_file in output_files:
-      n_output_files.append(f"{output_file}-shard-{shard_count}")
-      tf.logging.info("  %s", output_file)
+        rng))
+  
+  rng.shuffle(instances)
+  tf.logging.info("*** Writing to output files ***")
+  write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
+                                    FLAGS.max_predictions_per_seq, FLAGS.output_file)
+  # output_files = FLAGS.output_file.split(",")
+  # n_output_files = []
+  # for output_file in output_files:
+  #   n_output_files.append(f"{output_file}-shard-{shard_count}")
+  #   tf.logging.info("  %s", output_file)
 
-    write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
-                                    FLAGS.max_predictions_per_seq, n_output_files)
-    shard_count+=1
+    
+  #   shard_count+=1
+ 
+  #   output_files = FLAGS.output_file.split(",")
+  #   n_output_files = []
+  #   tf.logging.info("*** Writing to output files ***")
+  #   for output_file in output_files:
+  #     n_output_files.append(f"{output_file}-shard-{shard_count}")
+  #     tf.logging.info("  %s", output_file)
+
+  #   write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
+  #                                   FLAGS.max_predictions_per_seq, n_output_files)
+  #   shard_count+=1
 
 if __name__ == "__main__":
   flags.mark_flag_as_required("input_file_synthetic")

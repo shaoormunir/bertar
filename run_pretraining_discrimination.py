@@ -170,13 +170,13 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     # tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
     # tf.identity(model.get_pooled_output(), name='pooled_output')
 
-    tf.summary.scalar("total_loss",tf.convert_to_tensor(total_loss, dtype=tf.float32))
-    tf.summary.scalar("synthetic_prediction_loss", tf.convert_to_tensor(synthetic_loss, dtype=tf.float32))
-    tf.summary.scalar("next_sentence_loss", tf.convert_to_tensor(next_sentence_loss, dtype=tf.float32) )
-    tf.summary.scalar("masked_lm_loss", tf.convert_to_tensor(masked_lm_loss, dtype=tf.float32))
-    tf.summary.histogram(
-        "encoder_layers", model.get_all_encoder_layers())
-    tf.summary.histogram("pooled_output", model.get_pooled_output())
+    # tf.summary.scalar("total_loss",tf.convert_to_tensor(total_loss, dtype=tf.float32))
+    # tf.summary.scalar("synthetic_prediction_loss", tf.convert_to_tensor(synthetic_loss, dtype=tf.float32))
+    # tf.summary.scalar("next_sentence_loss", tf.convert_to_tensor(next_sentence_loss, dtype=tf.float32) )
+    # tf.summary.scalar("masked_lm_loss", tf.convert_to_tensor(masked_lm_loss, dtype=tf.float32))
+    # tf.summary.histogram(
+    #     "encoder_layers", model.get_all_encoder_layers())
+    # tf.summary.histogram("pooled_output", model.get_pooled_output())
 
 
     # train_summary_hook = tf.train.SummarySaverHook(
