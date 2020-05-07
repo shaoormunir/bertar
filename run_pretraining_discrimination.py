@@ -167,14 +167,14 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
     tf.identity(model.get_pooled_output(), name='pooled_output')
 
-    tf.contrib.summary.scalar("total_loss", total_loss)
-    tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
-    tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
-    tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
+    tf.summary.scalar("total_loss", total_loss)
+    tf.summary.scalar("synthetic_prediction_loss", synthetic_loss)
+    tf.summary.scalar("next_sentence_loss", next_sentence_loss)
+    tf.summary.scalar("masked_lm_loss", masked_lm_loss)
 
-    tf.contrib.summary.histogram(
+    tf.summary.histogram(
         "encoder_layers", model.get_all_encoder_layers())
-    tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
+    tf.summary.histogram("pooled_output", model.get_pooled_output())
 
     # train_summary_hook = tf.train.SummarySaverHook(
     #                             save_steps=1,
@@ -273,7 +273,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
           mode=mode,
           loss=total_loss,
           eval_metrics=eval_metrics,
-          training_hooks=[train_summary_hook],
           scaffold_fn=scaffold_fn)
     else:
       raise ValueError("Only TRAIN and EVAL modes are supported: %s" % (mode))
