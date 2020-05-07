@@ -38,7 +38,7 @@ flags.DEFINE_string(
     "Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-3",
+    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-test",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
@@ -67,7 +67,7 @@ flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
 
 flags.DEFINE_float("learning_rate", 5e-5, "The initial learning rate for Adam.")
 
-flags.DEFINE_integer("num_train_steps", 100000, "Number of training steps.")
+flags.DEFINE_integer("num_train_steps", 1000, "Number of training steps.")
 
 flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 
@@ -168,6 +168,11 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     tf.contrib.summary.histogram("encoder_layers", model.get_all_encoder_layers())
     tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
+    train_summary_hook = tf.train.SummarySaverHook(
+                                save_steps=1,
+                                output_dir= FLAGS.output_dir + "/test_summaries",
+                                summary_op=tf.summary.merge_all())
+
     tvars = tf.trainable_variables()
 
     initialized_variable_names = {}
@@ -261,6 +266,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
           mode=mode,
           loss=total_loss,
           eval_metrics=eval_metrics,
+          training_hooks = [train_summary_hook],
           scaffold_fn=scaffold_fn)
     else:
       raise ValueError("Only TRAIN and EVAL modes are supported: %s" % (mode))
