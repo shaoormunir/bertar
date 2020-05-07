@@ -160,12 +160,12 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
-    tf.identity(total_loss, name='total_loss')
-    tf.identity(synthetic_loss, name='synthetic_prediction_loss')
-    tf.identity(next_sentence_loss, name='next_sentence_loss')
-    tf.identity(masked_lm_loss, name='masked_lm_loss')
-    tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
-    tf.identity(model.get_pooled_output(), name='pooled_output')
+    # tf.identity(total_loss, name='total_loss')
+    # tf.identity(synthetic_loss, name='synthetic_prediction_loss')
+    # tf.identity(next_sentence_loss, name='next_sentence_loss')
+    # tf.identity(masked_lm_loss, name='masked_lm_loss')
+    # tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
+    # tf.identity(model.get_pooled_output(), name='pooled_output')
 
     tf.contrib.summary.scalar("total_loss", total_loss)
     tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
@@ -181,15 +181,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     #                             output_dir= FLAGS.output_dir + "/test_summaries",
     #                             scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
 
-    
-    tensors_to_log = {
-      'total_loss': 'total_loss',
-      'synthetic_prediction_loss': 'synthetic_prediction_loss',
-      'next_sentence_loss': 'next_sentence_loss',
-      'masked_lm_loss': 'masked_lm_loss',
-      'pooled_output': 'pooled_output',
-      }
-    logging_hook = tf.train.LoggingTensorHook(tensors=tensors_to_log, every_n_iter=100)
     tvars = tf.trainable_variables()
 
     initialized_variable_names = {}
@@ -223,7 +214,6 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
           mode=mode,
           loss=total_loss,
           train_op=train_op,
-          hooks = [logging_hook],
           scaffold_fn=scaffold_fn)
     elif mode == tf.estimator.ModeKeys.EVAL:
 
@@ -539,6 +529,10 @@ def main(_):
       eval_batch_size=FLAGS.eval_batch_size)
 
   if FLAGS.do_train:
+    summary_hook = tf.train.SummarySaverHook(
+    save_secs=2,
+    output_dir=FLAGS.model_dir,
+    summary_op=tf.summary.merge_all())
     tf.logging.info("***** Running training *****")
     tf.logging.info("  Batch size = %d", FLAGS.train_batch_size)
     train_input_fn = input_fn_builder(
@@ -546,7 +540,7 @@ def main(_):
         max_seq_length=FLAGS.max_seq_length,
         max_predictions_per_seq=FLAGS.max_predictions_per_seq,
         is_training=True)
-    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps)
+    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps, hooks=[summary_hook])
 
   if FLAGS.do_eval:
     tf.logging.info("***** Running evaluation *****")
