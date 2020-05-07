@@ -171,7 +171,7 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     train_summary_hook = tf.train.SummarySaverHook(
                                 save_steps=1,
                                 output_dir= FLAGS.output_dir + "/test_summaries",
-                                summary_op=tf.summary.merge_all())
+                                scaffold=tf.train.Scaffold(summary_op=tf.summary.merge_all()))
 
     tvars = tf.trainable_variables()
 
