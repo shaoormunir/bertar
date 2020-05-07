@@ -34,7 +34,7 @@ flags.DEFINE_string("input_file_organic", "/content/drive/My Drive/bert-vocab-an
                     "Input raw text file (or comma-separated list of files).")
 
 flags.DEFINE_string(
-    "output_file", "/content/drive/My Drive/iowa-project-2/train_data_new.tf_record",
+    "output_file", "/content/drive/My Drive/iowa-project-2/train_data_new_balanced.tf_record",
     "Output TF example file (or comma-separated list of files).")
 
 flags.DEFINE_string("vocab_file", "vocab.txt",
