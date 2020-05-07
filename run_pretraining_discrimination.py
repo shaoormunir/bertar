@@ -160,6 +160,13 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
+    tf.identity(total_loss, name='total_loss')
+    tf.identity(synthetic_loss, name='synthetic_prediction_loss')
+    tf.identity(next_sentence_loss, name='next_sentence_loss')
+    tf.identity(masked_lm_loss, name='masked_lm_loss')
+    tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
+    tf.identity(model.get_pooled_output(), name='pooled_output')
+
     tf.contrib.summary.scalar("total_loss", total_loss)
     tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
     tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
