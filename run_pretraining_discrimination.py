@@ -78,7 +78,7 @@ flags.DEFINE_integer("save_checkpoints_steps", 2000,
 flags.DEFINE_integer("save_summary_steps", 1000,
                      "How often to save the model summaries.")
 
-flags.DEFINE_integer("iterations_per_loop", 1000,
+flags.DEFINE_integer("iterations_per_loop", 100,
                      "How many steps to make in each estimator call.")
 
 flags.DEFINE_integer("max_eval_steps", 100, "Maximum number of eval steps.")
@@ -214,16 +214,10 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     if mode == tf.estimator.ModeKeys.TRAIN:
       train_op = optimization.create_optimizer(
           total_loss, learning_rate, num_train_steps, num_warmup_steps, use_tpu)
-      
-      eval_metric_ops =   {"total_loss": total_loss,"synthetic_prediction_loss": synthetic_loss,"next_sentence_loss": next_sentence_loss,
-      "masked_lm_loss": masked_lm_loss,
-      "encoder_layers": model.get_all_encoder_layers(),
-      "pooled_output": model.get_pooled_output()}
 
       output_spec = tf.contrib.tpu.TPUEstimatorSpec(
           mode=mode,
           loss=total_loss,
-          metric_ops=eval_metric_ops,
           train_op=train_op,
           scaffold_fn=scaffold_fn)
     elif mode == tf.estimator.ModeKeys.EVAL:
