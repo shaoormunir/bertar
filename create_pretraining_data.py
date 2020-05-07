@@ -171,14 +171,17 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     # Writing for token a from here
     input_ids = tokenizer.convert_tokens_to_ids(instance.tokens_a)
     input_mask = [1] * len(input_ids)
+    segment_ids = [0] * len(input_ids)
     assert len(input_ids) <= max_seq_length
 
     while len(input_ids) < max_seq_length:
       input_ids.append(0)
       input_mask.append(0)
+      segment_ids.append(0)
 
     assert len(input_ids) == max_seq_length
     assert len(input_mask) == max_seq_length
+    assert len(segment_ids) == max_seq_length
 
     masked_lm_positions = list(instance.masked_lm_positions_a)
     masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels_a)
@@ -190,13 +193,16 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
       masked_lm_weights.append(0.0)
 
     synthetic_label = 1 if instance.is_synthetic else 0
+    next_sentence_label = 0
 
     features = collections.OrderedDict()
     features["input_ids"] = create_int_feature(input_ids)
     features["input_mask"] = create_int_feature(input_mask)
+    features["segment_ids"] = create_int_feature(segment_ids)
     features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
     features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
     features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
+    features["next_sentence_labels"] = create_int_feature([next_sentence_label])
     features["synthetic_text_labels"] = create_int_feature([synthetic_label])
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
@@ -206,14 +212,17 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     #writing for token b from here
     input_ids = tokenizer.convert_tokens_to_ids(instance.tokens_b)
     input_mask = [1] * len(input_ids)
+    segment_ids = [0] * len(input_ids)
     assert len(input_ids) <= max_seq_length
 
     while len(input_ids) < max_seq_length:
       input_ids.append(0)
       input_mask.append(0)
+      segment_ids.append(0)
 
     assert len(input_ids) == max_seq_length
     assert len(input_mask) == max_seq_length
+    assert len(segment_ids) == max_seq_length
 
     masked_lm_positions = list(instance.masked_lm_positions_b)
     masked_lm_ids = tokenizer.convert_tokens_to_ids(instance.masked_lm_labels_b)
@@ -225,13 +234,16 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
       masked_lm_weights.append(0.0)
 
     synthetic_label = 1 if instance.is_synthetic else 0
+    next_sentence_label = 0
 
     features = collections.OrderedDict()
     features["input_ids"] = create_int_feature(input_ids)
     features["input_mask"] = create_int_feature(input_mask)
+    features["segment_ids"] = create_int_feature(segment_ids)
     features["masked_lm_positions"] = create_int_feature(masked_lm_positions)
     features["masked_lm_ids"] = create_int_feature(masked_lm_ids)
     features["masked_lm_weights"] = create_float_feature(masked_lm_weights)
+    features["next_sentence_labels"] = create_int_feature([next_sentence_label])
     features["synthetic_text_labels"] = create_int_feature([synthetic_label])
 
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
