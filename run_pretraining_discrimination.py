@@ -177,8 +177,8 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     df.append({"total_loss":total_loss, "synthetic_prediction_loss":synthetic_loss,"next_sentence_loss":next_sentence_loss,"masked_lm_loss":masked_lm_loss})
 
-    pd.to_csv("losses.csv", mode='a', headers=False)
-    
+    pd.to_csv(FLAGS.output_dir+"/losses.csv", mode='a', headers=False)
+
     tf.contrib.summary.histogram(
         "encoder_layers", model.get_all_encoder_layers())
     tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
