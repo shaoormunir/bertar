@@ -175,9 +175,9 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
     tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
 
-    df.append({"total_loss":total_loss, "synthetic_prediction_loss":synthetic_loss,"next_sentence_loss":next_sentence_loss,"masked_lm_loss":masked_lm_loss})
+    df.append({"total_loss":total_loss, "synthetic_prediction_loss":synthetic_loss,"next_sentence_loss":next_sentence_loss,"masked_lm_loss":masked_lm_loss}, ignore_index=True)
 
-    pd.to_csv(FLAGS.output_dir+"/losses.csv", mode='a', headers=False)
+    df.to_csv(FLAGS.output_dir+"/losses.csv", mode='a', header=False)
 
     tf.contrib.summary.histogram(
         "encoder_layers", model.get_all_encoder_layers())
