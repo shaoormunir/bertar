@@ -12,7 +12,7 @@ import optimization
 import tokenization
 import random
 import nltk
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 
 
 nltk.download('punkt')
