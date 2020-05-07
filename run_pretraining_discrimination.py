@@ -190,11 +190,15 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
       ) = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
       if use_tpu:
         def tpu_scaffold():
+          tf.summary.merge_all()
           tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
           return tf.train.Scaffold()
 
         scaffold_fn = tpu_scaffold
       else:
+        def scaffold_temp():
+          tf.summary.merge_all()
+        scaffold_fn = scaffold_temp
         tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
     tf.logging.info("**** Trainable Variables ****")
@@ -529,10 +533,6 @@ def main(_):
       eval_batch_size=FLAGS.eval_batch_size)
 
   if FLAGS.do_train:
-    summary_hook = tf.train.SummarySaverHook(
-    save_secs=2,
-    output_dir=FLAGS.model_dir,
-    summary_op=tf.summary.merge_all())
     tf.logging.info("***** Running training *****")
     tf.logging.info("  Batch size = %d", FLAGS.train_batch_size)
     train_input_fn = input_fn_builder(
@@ -540,7 +540,7 @@ def main(_):
         max_seq_length=FLAGS.max_seq_length,
         max_predictions_per_seq=FLAGS.max_predictions_per_seq,
         is_training=True)
-    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps, hooks=[summary_hook])
+    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps)
 
   if FLAGS.do_eval:
     tf.logging.info("***** Running evaluation *****")
