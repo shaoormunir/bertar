@@ -167,14 +167,19 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
     # tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
     # tf.identity(model.get_pooled_output(), name='pooled_output')
 
-    tf.contrib.summary.scalar("total_loss", total_loss)
-    tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
-    tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
-    tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
+    summary_writer = tf.contrib.summary.create_file_writer(FLAGS.output_dir+"/logs", flush_millis=3000)
 
-    tf.contrib.summary.histogram(
-        "encoder_layers", model.get_all_encoder_layers())
-    tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
+# First we create one summary which runs every n global steps
+    with summary_writer.as_default(), tf.contrib.summary.always_record_summaries():
+      tf.contrib.summary.scalar("total_loss", total_loss)
+      tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_loss)
+      tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
+      tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
+      tf.contrib.summary.flush()
+
+      tf.contrib.summary.histogram(
+          "encoder_layers", model.get_all_encoder_layers())
+      tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
     # train_summary_hook = tf.train.SummarySaverHook(
     #                             save_steps=1,
