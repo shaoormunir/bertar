@@ -69,7 +69,7 @@ flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
 flags.DEFINE_float("learning_rate", 5e-5,
                    "The initial learning rate for Adam.")
 
-flags.DEFINE_integer("num_train_steps", 3000, "Number of training steps.")
+flags.DEFINE_integer("num_train_steps", 10000, "Number of training steps.")
 
 flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 
@@ -111,48 +111,48 @@ flags.DEFINE_integer(
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
 
   
-class SaveMetricsHook(tf.train.SessionRunHook):
-  """Prints the given tensors every N local steps, every N seconds, or at end.
-  The tensors will be printed to the log, with `INFO` severity. If you are not
-  seeing the logs, you might want to add the following line after your imports:
-  ```python
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
-  ```
-  Note that if `at_end` is True, `tensors` should not include any tensor
-  whose evaluation produces a side effect such as consuming additional inputs.
-  """
-  def before_run(self, run_context):  # pylint: disable=unused-argument
-     graph = run_context.session.graph
-     self.total_loss = graph.get_tensor_by_name("total_loss:0")
-     self.synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss:0")
-     self.next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss:0")
-     self.masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss:0")
-     self.encoder_layers = graph.get_tensor_by_name("encoder_layers:0")
-     self.pooled_output = graph.get_tensor_by_name("pooled_output:0")
-     self.finalized = graph.finalized
+# class SaveMetricsHook(tf.train.SessionRunHook):
+#   """Prints the given tensors every N local steps, every N seconds, or at end.
+#   The tensors will be printed to the log, with `INFO` severity. If you are not
+#   seeing the logs, you might want to add the following line after your imports:
+#   ```python
+#     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+#   ```
+#   Note that if `at_end` is True, `tensors` should not include any tensor
+#   whose evaluation produces a side effect such as consuming additional inputs.
+#   """
+#   def before_run(self, run_context):  # pylint: disable=unused-argument
+#      graph = run_context.session.graph
+#      self.total_loss = graph.get_tensor_by_name("total_loss:0")
+#      self.synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss:0")
+#      self.next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss:0")
+#      self.masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss:0")
+#      self.encoder_layers = graph.get_tensor_by_name("encoder_layers:0")
+#      self.pooled_output = graph.get_tensor_by_name("pooled_output:0")
+#      self.finalized = graph.finalized
 
-  def after_run(self, run_context, run_values):
-    #  total_loss = run_values.results[0]
-    #  synthetic_prediction_loss = run_values.results[0]
-    #  next_sentence_loss = run_values.results[0]
-    #  masked_lm_loss = run_values.results[0]
-    #  encoder_layers = run_values.results[0]
-    #  pooled_output = run_values.results[0]
+#   def after_run(self, run_context, run_values):
+#     #  total_loss = run_values.results[0]
+#     #  synthetic_prediction_loss = run_values.results[0]
+#     #  next_sentence_loss = run_values.results[0]
+#     #  masked_lm_loss = run_values.results[0]
+#     #  encoder_layers = run_values.results[0]
+#     #  pooled_output = run_values.results[0]
 
-    # df = pd.DataFrame(columns = ("total_loss", "synthetic_prediction_loss","next_sentence_loss","masked_lm_loss"))
-    # df = df.append({"total_loss":self.total_loss.eval(session=run_context.session), "synthetic_prediction_loss":self.synthetic_prediction_loss.eval(session=run_context.session),"next_sentence_loss":self.next_sentence_loss.eval(session=run_context.session),"masked_lm_loss":self.masked_lm_loss.eval(session=run_context.session)}, ignore_index=True)
-    # df.to_csv("loss.csv", mode='a'https://www.blue-ex.com/tracking?trackno=5011841517, header=False)
-    # df.to_csv(FLAGS.output_dir+"/loss.csv", mode='a', header=False)
+#     # df = pd.DataFrame(columns = ("total_loss", "synthetic_prediction_loss","next_sentence_loss","masked_lm_loss"))
+#     # df = df.append({"total_loss":self.total_loss.eval(session=run_context.session), "synthetic_prediction_loss":self.synthetic_prediction_loss.eval(session=run_context.session),"next_sentence_loss":self.next_sentence_loss.eval(session=run_context.session),"masked_lm_loss":self.masked_lm_loss.eval(session=run_context.session)}, ignore_index=True)
+#     # df.to_csv("loss.csv", mode='a'https://www.blue-ex.com/tracking?trackno=5011841517, header=False)
+#     # df.to_csv(FLAGS.output_dir+"/loss.csv", mode='a', header=False)
 
-    if not self.finalized:
-      tf.contrib.summary.scalar("total_loss",self.total_loss)
-      tf.contrib.summary.scalar("synthetic_prediction_loss", self.synthetic_prediction_loss)
-      tf.contrib.summary.scalar("next_sentence_loss",self.next_sentence_loss)
-      tf.contrib.summary.scalar("masked_lm_loss", self.masked_lm_loss)
-      tf.contrib.summary.histogram(
-          "encoder_layers", self.encoder_layers)
-      tf.contrib.summary.histogram("pooled_output", self.pooled_output)
-      tf.summary.merge_all()
+#     if not self.finalized:
+#       tf.contrib.summary.scalar("total_loss",self.total_loss)
+#       tf.contrib.summary.scalar("synthetic_prediction_loss", self.synthetic_prediction_loss)
+#       tf.contrib.summary.scalar("next_sentence_loss",self.next_sentence_loss)
+#       tf.contrib.summary.scalar("masked_lm_loss", self.masked_lm_loss)
+#       tf.contrib.summary.histogram(
+#           "encoder_layers", self.encoder_layers)
+#       tf.contrib.summary.histogram("pooled_output", self.pooled_output)
+#       tf.summary.merge_all()
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
@@ -205,12 +205,12 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
-    tf.identity(total_loss, name='total_loss')
-    tf.identity(synthetic_loss, name='synthetic_prediction_loss')
-    tf.identity(next_sentence_loss, name='next_sentence_loss')
-    tf.identity(masked_lm_loss, name='masked_lm_loss')
-    tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
-    tf.identity(model.get_pooled_output(), name='pooled_output')
+    # tf.identity(total_loss, name='total_loss')
+    # tf.identity(synthetic_loss, name='synthetic_prediction_loss')
+    # tf.identity(next_sentence_loss, name='next_sentence_loss')
+    # tf.identity(masked_lm_loss, name='masked_lm_loss')
+    # tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
+    # tf.identity(model.get_pooled_output(), name='pooled_output')
 
     # tf.summary.scalar("total_loss",tf.convert_to_tensor(total_loss, dtype=tf.float32))
     # tf.summary.scalar("synthetic_prediction_loss", tf.convert_to_tensor(synthetic_loss, dtype=tf.float32))
@@ -304,15 +304,15 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         synthetic_mean_loss = tf.metrics.mean(
             values=synthetic_example_loss)
 
-        tf.contrib.summary.scalar("masked_lm_accuracy",masked_lm_accuracy)
-        tf.contrib.summary.scalar("masked_lm_loss", masked_lm_mean_loss)
-        tf.contrib.summary.scalar("next_sentence_accuracy",next_sentence_accuracy)
-        tf.contrib.summary.scalar("next_sentence_loss", next_sentence_mean_loss)
-        tf.contrib.summary.scalar("synthetic_accuracy", synthetic_accuracy)
-        tf.contrib.summary.scalar("synthetic_mean_loss", synthetic_mean_loss)
-        tf.contrib.summary.histogram(
-            "synthetic_accuracy", model.get_all_encoder_layers())
-        tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
+        # tf.contrib.summary.scalar("masked_lm_accuracy",masked_lm_accuracy)
+        # tf.contrib.summary.scalar("masked_lm_loss", masked_lm_mean_loss)
+        # tf.contrib.summary.scalar("next_sentence_accuracy",next_sentence_accuracy)
+        # tf.contrib.summary.scalar("next_sentence_loss", next_sentence_mean_loss)
+        # tf.contrib.summary.scalar("synthetic_accuracy", synthetic_accuracy)
+        # tf.contrib.summary.scalar("synthetic_mean_loss", synthetic_mean_loss)
+        # tf.contrib.summary.histogram(
+        #     "synthetic_accuracy", model.get_all_encoder_layers())
+        # tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
         return {
             "masked_lm_accuracy": masked_lm_accuracy,
@@ -593,7 +593,7 @@ def main(_):
         max_seq_length=FLAGS.max_seq_length,
         max_predictions_per_seq=FLAGS.max_predictions_per_seq,
         is_training=True)
-    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps, hooks = [SaveMetricsHook()])
+    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps)
 
   if FLAGS.do_eval:
     tf.logging.info("***** Running evaluation *****")
