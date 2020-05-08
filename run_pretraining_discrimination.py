@@ -60,7 +60,7 @@ flags.DEFINE_integer(
 
 flags.DEFINE_bool("do_train", True, "Whether to run training.")
 
-flags.DEFINE_bool("do_eval", True, "Whether to run eval on the dev set.")
+flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
 
 flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
 
@@ -109,6 +109,42 @@ tf.flags.DEFINE_string("master", None, "[Optional] TensorFlow master URL.")
 flags.DEFINE_integer(
     "num_tpu_cores", 8,
     "Only used if `use_tpu` is True. Total number of TPU cores to use.")
+
+  
+class SaveMetricsHook(tf.train.SessionRunHook):
+  """Prints the given tensors every N local steps, every N seconds, or at end.
+  The tensors will be printed to the log, with `INFO` severity. If you are not
+  seeing the logs, you might want to add the following line after your imports:
+  ```python
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+  ```
+  Note that if `at_end` is True, `tensors` should not include any tensor
+  whose evaluation produces a side effect such as consuming additional inputs.
+  """
+  def before_run(self, run_context):  # pylint: disable=unused-argument
+     graph = run_context.session.graph
+     total_loss = graph.get_tensor_by_name("total_loss")
+     synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss")
+     next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss")
+     masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss")
+     encoder_layers = graph.get_tensor_by_name("encoder_layers")
+     pooled_output = graph.get_tensor_by_name("pooled_output")
+     return tf.train.SessionArgs([total_loss, synthetic_prediction_loss, next_sentence_loss, masked_lm_loss, encoder_layers, pooled_output])
+
+  def after_run(self, run_context, run_values):
+     total_loss = run_values.results[0]
+     synthetic_prediction_loss = run_values.results[0]
+     next_sentence_loss = run_values.results[0]
+     masked_lm_loss = run_values.results[0]
+     encoder_layers = run_values.results[0]
+     pooled_output = run_values.results[0]
+     tf.contrib.summary.scalar("total_loss",total_loss)
+     tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_prediction_loss)
+     tf.contrib.summary.scalar("next_sentence_loss",next_sentence_loss)
+     tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
+     tf.contrib.summary.histogram(
+        "encoder_layers", encoder_layers)
+     tf.contrib.summary.histogram("pooled_output", pooled_output)
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
@@ -163,12 +199,12 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
-    # tf.identity(total_loss, name='total_loss')
-    # tf.identity(synthetic_loss, name='synthetic_prediction_loss')
-    # tf.identity(next_sentence_loss, name='next_sentence_loss')
-    # tf.identity(masked_lm_loss, name='masked_lm_loss')
-    # tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
-    # tf.identity(model.get_pooled_output(), name='pooled_output')
+    tf.identity(total_loss, name='total_loss')
+    tf.identity(synthetic_loss, name='synthetic_prediction_loss')
+    tf.identity(next_sentence_loss, name='next_sentence_loss')
+    tf.identity(masked_lm_loss, name='masked_lm_loss')
+    tf.identity(model.get_all_encoder_layers(), name='encoder_layers')
+    tf.identity(model.get_pooled_output(), name='pooled_output')
 
     # tf.summary.scalar("total_loss",tf.convert_to_tensor(total_loss, dtype=tf.float32))
     # tf.summary.scalar("synthetic_prediction_loss", tf.convert_to_tensor(synthetic_loss, dtype=tf.float32))
@@ -551,7 +587,7 @@ def main(_):
         max_seq_length=FLAGS.max_seq_length,
         max_predictions_per_seq=FLAGS.max_predictions_per_seq,
         is_training=True)
-    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps)
+    estimator.train(input_fn=train_input_fn, max_steps=FLAGS.num_train_steps, hooks = [SaveMetricsHook()])
 
   if FLAGS.do_eval:
     tf.logging.info("***** Running evaluation *****")
