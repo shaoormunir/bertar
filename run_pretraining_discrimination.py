@@ -69,7 +69,7 @@ flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
 flags.DEFINE_float("learning_rate", 5e-5,
                    "The initial learning rate for Adam.")
 
-flags.DEFINE_integer("num_train_steps", 2000, "Number of training steps.")
+flags.DEFINE_integer("num_train_steps", 3000, "Number of training steps.")
 
 flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 
@@ -141,7 +141,7 @@ class SaveMetricsHook(tf.train.SessionRunHook):
 
     # df = pd.DataFrame(columns = ("total_loss", "synthetic_prediction_loss","next_sentence_loss","masked_lm_loss"))
     # df = df.append({"total_loss":self.total_loss.eval(session=run_context.session), "synthetic_prediction_loss":self.synthetic_prediction_loss.eval(session=run_context.session),"next_sentence_loss":self.next_sentence_loss.eval(session=run_context.session),"masked_lm_loss":self.masked_lm_loss.eval(session=run_context.session)}, ignore_index=True)
-    # df.to_csv("loss.csv", mode='a', header=False)
+    # df.to_csv("loss.csv", mode='a'https://www.blue-ex.com/tracking?trackno=5011841517, header=False)
     # df.to_csv(FLAGS.output_dir+"/loss.csv", mode='a', header=False)
 
     if not self.finalized:
