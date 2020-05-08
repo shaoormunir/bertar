@@ -123,28 +123,27 @@ class SaveMetricsHook(tf.train.SessionRunHook):
   """
   def before_run(self, run_context):  # pylint: disable=unused-argument
      graph = run_context.session.graph
-     total_loss = graph.get_tensor_by_name("total_loss:0")
-     synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss:0")
-     next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss:0")
-     masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss:0")
-     encoder_layers = graph.get_tensor_by_name("encoder_layers:0")
-     pooled_output = graph.get_tensor_by_name("pooled_output:0")
-     return tf.train.SessionArgs([total_loss, synthetic_prediction_loss, next_sentence_loss, masked_lm_loss, encoder_layers, pooled_output])
+     self.total_loss = graph.get_tensor_by_name("total_loss:0")
+     self.synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss:0")
+     self.next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss:0")
+     self.masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss:0")
+     self.encoder_layers = graph.get_tensor_by_name("encoder_layers:0")
+     self.pooled_output = graph.get_tensor_by_name("pooled_output:0")
 
   def after_run(self, run_context, run_values):
-     total_loss = run_values.results[0]
-     synthetic_prediction_loss = run_values.results[0]
-     next_sentence_loss = run_values.results[0]
-     masked_lm_loss = run_values.results[0]
-     encoder_layers = run_values.results[0]
-     pooled_output = run_values.results[0]
-     tf.contrib.summary.scalar("total_loss",total_loss)
-     tf.contrib.summary.scalar("synthetic_prediction_loss", synthetic_prediction_loss)
-     tf.contrib.summary.scalar("next_sentence_loss",next_sentence_loss)
-     tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
+    #  total_loss = run_values.results[0]
+    #  synthetic_prediction_loss = run_values.results[0]
+    #  next_sentence_loss = run_values.results[0]
+    #  masked_lm_loss = run_values.results[0]
+    #  encoder_layers = run_values.results[0]
+    #  pooled_output = run_values.results[0]
+     tf.contrib.summary.scalar("total_loss",self.total_loss)
+     tf.contrib.summary.scalar("synthetic_prediction_loss", self.synthetic_prediction_loss)
+     tf.contrib.summary.scalar("next_sentence_loss",self.next_sentence_loss)
+     tf.contrib.summary.scalar("masked_lm_loss", self.masked_lm_loss)
      tf.contrib.summary.histogram(
-        "encoder_layers", encoder_layers)
-     tf.contrib.summary.histogram("pooled_output", pooled_output)
+        "encoder_layers", self.encoder_layers)
+     tf.contrib.summary.histogram("pooled_output", self.pooled_output)
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
