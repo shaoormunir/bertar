@@ -34,11 +34,11 @@ flags.DEFINE_string(
     "This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "input_file", "gs://bert-checkpoints/input-data/train_data.tf_record*",
+    "input_file", "gs://bert-checkpoints/input-data/train_data_new_balanced.tf_record-task-nsp",
     "Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bert-checkpoints/base-bert/base-model-run-3",
+    "output_dir", "gs://bert-checkpoints-test/base-bert/base-model-run-test",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
@@ -154,12 +154,12 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss
 
-    tf.contrib.summary.scalar("total_loss", total_loss)
-    tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
-    tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
+    # tf.contrib.summary.scalar("total_loss", total_loss)
+    # tf.contrib.summary.scalar("next_sentence_loss", next_sentence_loss)
+    # tf.contrib.summary.scalar("masked_lm_loss", masked_lm_loss)
 
-    tf.contrib.summary.histogram("encoder_layers", model.get_all_encoder_layers())
-    tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
+    # tf.contrib.summary.histogram("encoder_layers", model.get_all_encoder_layers())
+    # tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
     tvars = tf.trainable_variables()
 
