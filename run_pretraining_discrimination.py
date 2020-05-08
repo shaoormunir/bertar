@@ -262,15 +262,15 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         synthetic_mean_loss = tf.metrics.mean(
             values=synthetic_example_loss)
 
-        tf.summary.scalar("masked_lm_accuracy",masked_lm_accuracy)
-        tf.summary.scalar("masked_lm_loss", masked_lm_mean_loss)
-        tf.summary.scalar("next_sentence_accuracy",next_sentence_accuracy)
-        tf.summary.scalar("next_sentence_loss", next_sentence_mean_loss)
-        tf.summary.scalar("synthetic_accuracy", synthetic_accuracy)
-        tf.summary.scalar("synthetic_mean_loss", synthetic_mean_loss)
-        tf.summary.histogram(
+        tf.contrib.summary.scalar("masked_lm_accuracy",masked_lm_accuracy)
+        tf.contrib.summary.scalar("masked_lm_loss", masked_lm_mean_loss)
+        tf.contrib.summary.scalar("next_sentence_accuracy",next_sentence_accuracy)
+        tf.contrib.summary.scalar("next_sentence_loss", next_sentence_mean_loss)
+        tf.contrib.summary.scalar("synthetic_accuracy", synthetic_accuracy)
+        tf.contrib.summary.scalar("synthetic_mean_loss", synthetic_mean_loss)
+        tf.contrib.summary.histogram(
             "synthetic_accuracy", model.get_all_encoder_layers())
-        tf.summary.histogram("pooled_output", model.get_pooled_output())
+        tf.contrib.summary.histogram("pooled_output", model.get_pooled_output())
 
         return {
             "masked_lm_accuracy": masked_lm_accuracy,
