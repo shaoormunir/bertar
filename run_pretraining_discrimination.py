@@ -60,7 +60,7 @@ flags.DEFINE_integer(
 
 flags.DEFINE_bool("do_train", True, "Whether to run training.")
 
-flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
+flags.DEFINE_bool("do_eval", True, "Whether to run eval on the dev set.")
 
 flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
 
@@ -82,7 +82,7 @@ flags.DEFINE_integer("save_summary_steps", 1000,
 flags.DEFINE_integer("iterations_per_loop", 1000,
                      "How many steps to make in each estimator call.")
 
-flags.DEFINE_integer("max_eval_steps", 100, "Maximum number of eval steps.")
+flags.DEFINE_integer("max_eval_steps", 1000, "Maximum number of eval steps.")
 
 flags.DEFINE_bool("use_tpu", True, "Whether to use TPU or GPU/CPU.")
 
@@ -262,6 +262,16 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
         synthetic_mean_loss = tf.metrics.mean(
             values=synthetic_example_loss)
 
+        tf.summary.scalar("masked_lm_accuracy",masked_lm_accuracy)
+        tf.summary.scalar("masked_lm_loss", masked_lm_mean_loss)
+        tf.summary.scalar("next_sentence_accuracy",next_sentence_accuracy)
+        tf.summary.scalar("next_sentence_loss", next_sentence_mean_loss)
+        tf.summary.scalar("synthetic_accuracy", synthetic_accuracy)
+        tf.summary.scalar("synthetic_mean_loss", synthetic_mean_loss)
+        tf.summary.histogram(
+            "synthetic_accuracy", model.get_all_encoder_layers())
+        tf.summary.histogram("pooled_output", model.get_pooled_output())
+
         return {
             "masked_lm_accuracy": masked_lm_accuracy,
             "masked_lm_loss": masked_lm_mean_loss,
@@ -433,7 +443,6 @@ def input_fn_builder(input_files,
     if is_training:
       d = tf.data.Dataset.from_tensor_slices(tf.constant(input_files))
       d = d.repeat()
-      d = d.shuffle(buffer_size=len(input_files))
 
       # `cycle_length` is the number of parallel files that get read.
       cycle_length = min(num_cpu_threads, len(input_files))
@@ -445,7 +454,6 @@ def input_fn_builder(input_files,
               tf.data.TFRecordDataset,
               sloppy=is_training,
               cycle_length=cycle_length))
-      d = d.shuffle(buffer_size=100)
     else:
       d = tf.data.TFRecordDataset(input_files)
       # Since we evaluate for a fixed number of steps we don't want to encounter
