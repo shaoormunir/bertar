@@ -35,11 +35,11 @@ flags.DEFINE_string(
     "This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "input_file", "gs://bert-checkpoints/input-data/train_data.tf_record*",
+    "input_file", "gs://bert-checkpoints/input-data/train_data_new_balanced.tf_record-task-nsp",
     "Input TF example files (can be a glob or comma separated).")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bert-checkpoints/bertar/base-model-run-test",
+    "output_dir", "gs://bert-checkpoints-test/bertar/base-model-run-test",
     "The output directory where the model checkpoints will be written.")
 
 # Other parameters
@@ -69,14 +69,14 @@ flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
 flags.DEFINE_float("learning_rate", 5e-5,
                    "The initial learning rate for Adam.")
 
-flags.DEFINE_integer("num_train_steps", 10000, "Number of training steps.")
+flags.DEFINE_integer("num_train_steps", 100000, "Number of training steps.")
 
 flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 
-flags.DEFINE_integer("save_checkpoints_steps", 2000,
+flags.DEFINE_integer("save_checkpoints_steps", 100000,
                      "How often to save the model checkpoint.")
 
-flags.DEFINE_integer("save_summary_steps", 100,
+flags.DEFINE_integer("save_summary_steps", 1000,
                      "How often to save the model summaries.")
 
 flags.DEFINE_integer("iterations_per_loop", 1000,
