@@ -123,12 +123,12 @@ class SaveMetricsHook(tf.train.SessionRunHook):
   """
   def before_run(self, run_context):  # pylint: disable=unused-argument
      graph = run_context.session.graph
-     total_loss = graph.get_tensor_by_name("total_loss")
-     synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss")
-     next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss")
-     masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss")
-     encoder_layers = graph.get_tensor_by_name("encoder_layers")
-     pooled_output = graph.get_tensor_by_name("pooled_output")
+     total_loss = graph.get_tensor_by_name("total_loss:0")
+     synthetic_prediction_loss = graph.get_tensor_by_name("synthetic_prediction_loss:0")
+     next_sentence_loss = graph.get_tensor_by_name("next_sentence_loss:0")
+     masked_lm_loss = graph.get_tensor_by_name("masked_lm_loss:0")
+     encoder_layers = graph.get_tensor_by_name("encoder_layers:0")
+     pooled_output = graph.get_tensor_by_name("pooled_output:0")
      return tf.train.SessionArgs([total_loss, synthetic_prediction_loss, next_sentence_loss, masked_lm_loss, encoder_layers, pooled_output])
 
   def after_run(self, run_context, run_values):
