@@ -80,10 +80,10 @@ class TrainingInstance(object):
     self.is_random_next = is_random_next
     self.masked_lm_positions = masked_lm_positions
     self.masked_lm_labels = masked_lm_labels
-    self.masked_lm_positions_a = masked_lm_positions
-    self.masked_lm_labels_a = masked_lm_labels
-    self.masked_lm_positions_b = masked_lm_positions
-    self.masked_lm_labels_b = masked_lm_labels
+    self.masked_lm_positions_a = masked_lm_positions_a
+    self.masked_lm_labels_a = masked_lm_labels_a
+    self.masked_lm_positions_b = masked_lm_positions_b
+    self.masked_lm_labels_b = masked_lm_labels_b
     self.is_synthetic = is_synthetic
 
   def __str__(self):
@@ -208,6 +208,21 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 
     writers[1].write(tf_example.SerializeToString())
+
+    if inst_index < 20:
+      tf.logging.info("*** Example ***")
+      tf.logging.info("tokens: %s" % " ".join(
+          [tokenization.printable_text(x) for x in instance.tokens]))
+
+      for feature_name in features.keys():
+        feature = features[feature_name]
+        values = []
+        if feature.int64_list.value:
+          values = feature.int64_list.value
+        elif feature.float_list.value:
+          values = feature.float_list.value
+        tf.logging.info(
+            "%s: %s" % (feature_name, " ".join([str(x) for x in values])))
     
     #writing for token b from here
     input_ids = tokenizer.convert_tokens_to_ids(instance.tokens_b)
@@ -249,6 +264,21 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     tf_example = tf.train.Example(features=tf.train.Features(feature=features))
 
     writers[1].write(tf_example.SerializeToString())
+     
+    if inst_index < 20:
+      tf.logging.info("*** Example ***")
+      tf.logging.info("tokens: %s" % " ".join(
+          [tokenization.printable_text(x) for x in instance.tokens]))
+
+      for feature_name in features.keys():
+        feature = features[feature_name]
+        values = []
+        if feature.int64_list.value:
+          values = feature.int64_list.value
+        elif feature.float_list.value:
+          values = feature.float_list.value
+        tf.logging.info(
+            "%s: %s" % (feature_name, " ".join([str(x) for x in values])))
 
     total_written += 1
 
@@ -405,10 +435,17 @@ def create_instances_from_document(
           is_random_next = False
           for j in range(a_end, len(current_chunk)):
             tokens_b.extend(current_chunk[j])
+        
+        tokens_first = tokens_a.copy()
+        tokens_second = tokens_b.copy()
         truncate_seq_pair(tokens_a, tokens_b, max_num_tokens, rng)
+        truncate_seq_pair(tokens_first, [], max_num_tokens+1, rng)
+        truncate_seq_pair(tokens_second, [], max_num_tokens+1, rng)
 
         assert len(tokens_a) >= 1
         assert len(tokens_b) >= 1
+        assert len(tokens_first) >= 1
+        assert len(tokens_second) >= 1
 
         tokens = []
         tokens_senta = []
@@ -419,19 +456,27 @@ def create_instances_from_document(
         segment_ids.append(0)
         for token in tokens_a:
           tokens.append(token)
-          tokens_senta.append(token)
           segment_ids.append(0)
+        
+        for token in tokens_first:
+          tokens_senta.append(token)
 
         tokens.append("[SEP]")
         tokens_senta.append("[SEP]")
+
         segment_ids.append(0)
         tokens_sentb.append("[CLS]")
+        
         for token in tokens_b:
           tokens.append(token)
-          tokens_sentb.append(token)
           segment_ids.append(1)
+
+        for token in tokens_second:
+          tokens_sentb.append(token)
+        
         tokens.append("[SEP]")
         tokens_sentb.append("[SEP]")
+        
         segment_ids.append(1)
 
         (tokens, masked_lm_positions,
