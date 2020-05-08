@@ -201,6 +201,12 @@ def model_fn_builder(bert_config, init_checkpoint, learning_rate,
 
     total_loss = masked_lm_loss + next_sentence_loss + synthetic_loss
 
+
+    df = df.append({"total_loss":total_loss, "synthetic_prediction_loss":synthetic_loss,"next_sentence_loss":next_sentence_loss,"masked_lm_loss":masked_lm_loss}, ignore_index=True)
+    
+    df.to_csv("loss.csv", mode='a', header=False)
+    df.to_csv(FLAGS.output_dir+"/loss.csv", mode='a', header=False)
+
     tf.identity(total_loss, name='total_loss')
     tf.identity(synthetic_loss, name='synthetic_prediction_loss')
     tf.identity(next_sentence_loss, name='next_sentence_loss')
