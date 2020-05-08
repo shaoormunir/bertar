@@ -76,7 +76,7 @@ flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 flags.DEFINE_integer("save_checkpoints_steps", 2000,
                      "How often to save the model checkpoint.")
 
-flags.DEFINE_integer("save_summary_steps", 1000,
+flags.DEFINE_integer("save_summary_steps", 100,
                      "How often to save the model summaries.")
 
 flags.DEFINE_integer("iterations_per_loop", 1000,
@@ -139,10 +139,10 @@ class SaveMetricsHook(tf.train.SessionRunHook):
     #  encoder_layers = run_values.results[0]
     #  pooled_output = run_values.results[0]
 
-    df = pd.DataFrame(columns = ("total_loss", "synthetic_prediction_loss","next_sentence_loss","masked_lm_loss"))
-    df = df.append({"total_loss":self.total_loss.eval(session=run_context.session), "synthetic_prediction_loss":self.synthetic_prediction_loss.eval(session=run_context.session),"next_sentence_loss":self.next_sentence_loss.eval(session=run_context.session),"masked_lm_loss":self.masked_lm_loss.eval(session=run_context.session)}, ignore_index=True)
-    df.to_csv("loss.csv", mode='a', header=False)
-    df.to_csv(FLAGS.output_dir+"/loss.csv", mode='a', header=False)
+    # df = pd.DataFrame(columns = ("total_loss", "synthetic_prediction_loss","next_sentence_loss","masked_lm_loss"))
+    # df = df.append({"total_loss":self.total_loss.eval(session=run_context.session), "synthetic_prediction_loss":self.synthetic_prediction_loss.eval(session=run_context.session),"next_sentence_loss":self.next_sentence_loss.eval(session=run_context.session),"masked_lm_loss":self.masked_lm_loss.eval(session=run_context.session)}, ignore_index=True)
+    # df.to_csv("loss.csv", mode='a', header=False)
+    # df.to_csv(FLAGS.output_dir+"/loss.csv", mode='a', header=False)
 
     if not self.finalized:
       tf.contrib.summary.scalar("total_loss",self.total_loss)
@@ -152,6 +152,7 @@ class SaveMetricsHook(tf.train.SessionRunHook):
       tf.contrib.summary.histogram(
           "encoder_layers", self.encoder_layers)
       tf.contrib.summary.histogram("pooled_output", self.pooled_output)
+      tf.summary.merge_all()
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
