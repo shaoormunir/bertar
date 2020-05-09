@@ -71,9 +71,7 @@ flags.DEFINE_float("learning_rate", 5e-5,
 
 flags.DEFINE_integer("num_train_steps", 100000, "Number of training steps.")
 
-flags.DEFINE_integer("steps_completed", 100000, "Total steps which have already been completed (used to skip the data already parsed).")
-
-flags.DEFINE_integer("num_warmup_steps", 0, "Number of warmup steps.")
+flags.DEFINE_integer("num_warmup_steps", 10000, "Number of warmup steps.")
 
 flags.DEFINE_integer("save_checkpoints_steps", 100000,
                      "How often to save the model checkpoint.")
@@ -486,8 +484,8 @@ def input_fn_builder(input_files,
     # For eval, we want no shuffling and parallel reading doesn't matter.
     if is_training:
       d = tf.data.Dataset.from_tensor_slices(tf.constant(input_files))
-      d = d.skip(FLAGS.steps_completed*FLAGS.train_batch_size)
       d = d.repeat()
+      d = d.shuffle(buffer_size=len(input_files))
 
       # `cycle_length` is the number of parallel files that get read.
       cycle_length = min(num_cpu_threads, len(input_files))
@@ -499,6 +497,7 @@ def input_fn_builder(input_files,
               tf.data.TFRecordDataset,
               sloppy=is_training,
               cycle_length=cycle_length))
+      d = d.shuffle(buffer_size=100)
     else:
       d = tf.data.TFRecordDataset(input_files)
       # Since we evaluate for a fixed number of steps we don't want to encounter
