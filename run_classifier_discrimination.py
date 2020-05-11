@@ -58,7 +58,7 @@ flags.DEFINE_integer(
     "Sequences longer than this will be truncated, and sequences shorter "
     "than this will be padded.")
 
-flags.DEFINE_bool("do_train", True, "Whether to run training.")
+flags.DEFINE_bool("do_train", False, "Whether to run training.")
 
 flags.DEFINE_bool("do_eval", False, "Whether to run eval on the dev set.")
 
@@ -262,7 +262,7 @@ class BERTARProcessor(DataProcessor):
         examples.append(
             InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
 
-    with tf.gfile.GFile(data_dir+"human.test.txt.balanced", "r") as reader:
+    with tf.gfile.GFile(data_dir+"human.test.txt.unbalanced.new", "r") as reader:
       i = 0
       while True:
         line = tokenization.convert_to_unicode(reader.readline())
