@@ -45,7 +45,7 @@ flags.DEFINE_string(
 # Other parameters
 flags.DEFINE_string(
     "init_checkpoint", None,
-    "Initial checkpoint (usually from a pre-trained BERT model).")
+    "Initial checkpoint (usually from4/zwGj5Y8jiq9vCnwI-msPcasEWSI2-gMBBEH9iu6iFiFsQkq7RPv1WO8 a pre-trained BERT model).")
 
 flags.DEFINE_integer(
     "max_seq_length", 64,
