@@ -38,13 +38,13 @@ flags.DEFINE_string("vocab_file", "vocab.txt",
                     "The vocabulary file that the BERT model was trained on.")
 
 flags.DEFINE_string(
-    "output_dir", "gs://bert-checkpoints-test/bertar-nomlm/base-model-run-1-finetune",
+    "output_dir", "gs://bert-checkpoints-test/bertar-nomlm/base-model-run-2-finetune",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
 
 flags.DEFINE_string(
-    "init_checkpoint", "gs://bert-checkpoints/bertar-nomlm/base-model-run-1",
+    "init_checkpoint", "gs://bert-checkpoints/bertar-nomlm/base-model-run-2",
     "Initial checkpoint (usually from a pre-trained BERT model).")
 
 flags.DEFINE_bool(
